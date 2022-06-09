@@ -7,6 +7,7 @@ from .dgcnn_group import DGCNN_Grouper
 from utils.logger import *
 import numpy as np
 from knn_cuda import KNN
+from efficient_attention import AMLP
 knn = KNN(k=8, transpose_mode=False)
 
 def get_knn_index(coor_q, coor_k=None):
@@ -35,6 +36,9 @@ def get_graph_feature(x, knn_index, x_q=None):
         x = x.view(batch_size, 1, num_query, num_dims).expand(-1, k, -1, -1)
         feature = torch.cat((feature - x, x), dim=-1)
         return feature  # b k np c
+
+
+
 
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
@@ -123,12 +127,16 @@ class CrossAttention(nn.Module):
 
 
 class DecoderBlock(nn.Module):
-    def __init__(self, dim, num_heads, dim_q = None, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
+    def __init__(self, dim, num_heads, dim_q = None, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0., ffn_dimension=16, ffn_function='relu',
+                 attn_name='mha',
                  drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
         super().__init__()
         self.norm1 = norm_layer(dim)
-        self.self_attn = Attention(
-            dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+        self.self_attn = self.build_self(
+            dim, num_heads, qkv_bias, attn_drop, drop, ffn_dimension, ffn_function, attn_name
+        )
+        # self.self_attn = Attention(
+        #     dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
         dim_q = dim_q or dim
         self.norm_q = norm_layer(dim_q)
         self.norm_v = norm_layer(dim)
@@ -184,16 +192,48 @@ class DecoderBlock(nn.Module):
         # q = q + self.drop_path(self.attn(self.norm_q(q), self.norm_v(v)))
         q = q + self.drop_path(self.mlp(self.norm2(q)))
         return q
+    
+    def build_self(self, embed_dim: int,
+                   num_heads: int,
+                   add_qkv_bias=None,
+                   attn_dropout=0.,
+                   dropout=0.,
+                   ffn_dimension=16,
+                   ffn_function='relu',
+                   attn_name='amlp'):
+        if attn_name.lower() == 'amlp':
+            attn = AMLP(
+                bias=add_qkv_bias,
+                add_bias_kv=add_qkv_bias,
+                dropout = dropout,
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                ffn_dimension=ffn_dimension,
+                ffn_function=ffn_function
+            )
+        else:
+            attn = Attention(
+                dim=embed_dim,
+                num_heads=num_heads,
+                qkv_bias=add_qkv_bias,
+                qk_scale=None,
+                attn_drop=attn_dropout,
+                proj_drop=dropout
+            )
+        return attn
 
 
 class Block(nn.Module):
 
-    def __init__(self, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
+    def __init__(self, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0., attn_name='mha', ffn_dimension=16, ffn_function='relu',
                  drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
         super().__init__()
         self.norm1 = norm_layer(dim)
-        self.attn = Attention(
-            dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+        self.attn = self.build_self(
+            dim, num_heads, qkv_bias, attn_drop, drop, ffn_dimension, ffn_function, attn_name
+        )
+        # self.attn = Attention(
+        #     dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
         # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
@@ -223,6 +263,35 @@ class Block(nn.Module):
         x = x + self.drop_path(x_1)
         x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x
+    
+    def build_self(self, embed_dim: int,
+                   num_heads: int,
+                   add_qkv_bias=None,
+                   attn_dropout=0.,
+                   dropout=0.,
+                   ffn_dimension=16,
+                   ffn_function='relu',
+                   attn_name='amlp'):
+        if attn_name.lower() == 'amlp':
+            attn = AMLP(
+                bias=add_qkv_bias,
+                add_bias_kv=add_qkv_bias,
+                dropout = dropout,
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                ffn_dimension=ffn_dimension,
+                ffn_function=ffn_function
+            )
+        else:
+            attn = Attention(
+                dim=embed_dim,
+                num_heads=num_heads,
+                qkv_bias=add_qkv_bias,
+                qk_scale=None,
+                attn_drop=attn_dropout,
+                proj_drop=dropout
+            )
+        return attn
 
 
 
