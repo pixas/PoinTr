@@ -49,7 +49,7 @@ def get_args():
         help = 'difficulty mode for shapenet')  
     parser.add_argument(
         '--save_dir',
-        default='./experiments',
+        default='./pointr_experiments',
         type=str
     )      
     args = parser.parse_args()
