@@ -46,7 +46,12 @@ def get_args():
         '--mode', 
         choices=['easy', 'median', 'hard', None],
         default=None,
-        help = 'difficulty mode for shapenet')        
+        help = 'difficulty mode for shapenet')  
+    parser.add_argument(
+        '--save_dir',
+        default='./experiments',
+        type=str
+    )      
     args = parser.parse_args()
 
     if args.test and args.resume:
@@ -68,8 +73,8 @@ def get_args():
         args.exp_name = 'test_' + args.exp_name
     if args.mode is not None:
         args.exp_name = args.exp_name + '_' +args.mode
-    args.experiment_path = os.path.join('./experiments', Path(args.config).stem, Path(args.config).parent.stem, args.exp_name)
-    args.tfboard_path = os.path.join('./experiments', Path(args.config).stem, Path(args.config).parent.stem,'TFBoard' ,args.exp_name)
+    args.experiment_path = os.path.join(args.save_dir, Path(args.config).stem, Path(args.config).parent.stem, args.exp_name)
+    args.tfboard_path = os.path.join(args.save_dir, Path(args.config).stem, Path(args.config).parent.stem,'TFBoard' ,args.exp_name)
     args.log_name = Path(args.config).stem
     create_experiment_dir(args)
     return args
