@@ -165,7 +165,8 @@ class DecoderBlock(nn.Module):
         # q = q + self.drop_path(self.self_attn(self.norm1(q)))
         norm_q = self.norm1(q)
         q_1 = self.self_attn(norm_q)
-
+        if isinstance(q_1, tuple):
+            q_1 = q_1[0]
         if self_knn_index is not None:
             knn_f = get_graph_feature(norm_q, self_knn_index)
             knn_f = self.knn_map(knn_f)
@@ -178,7 +179,8 @@ class DecoderBlock(nn.Module):
         norm_q = self.norm_q(q)
         norm_v = self.norm_v(v)
         q_2 = self.attn(norm_q, norm_v)
-
+        if isinstance(q_2, tuple):
+            q_2 = q_2[0]
         if cross_knn_index is not None:
             knn_f = get_graph_feature(norm_v, cross_knn_index, norm_q)
             knn_f = self.knn_map_cross(knn_f)
@@ -296,7 +298,8 @@ class Block(nn.Module):
         # x = x + self.drop_path(self.attn(self.norm1(x)))
         norm_x = self.norm1(x)
         x_1 = self.attn(norm_x)
-
+        if isinstance(x_1, tuple):
+            x_1 = x_1[0]
         if knn_index is not None:
             knn_f = get_graph_feature(norm_x, knn_index)
             knn_f = self.knn_map(knn_f)
