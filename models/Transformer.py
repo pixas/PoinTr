@@ -7,7 +7,7 @@ from .dgcnn_group import DGCNN_Grouper
 from utils.logger import *
 import numpy as np
 from knn_cuda import KNN
-from efficient_attention import AMLP
+from efficient_attention import AMLP, ABC
 knn = KNN(k=8, transpose_mode=False)
 
 def get_knn_index(coor_q, coor_k=None):
@@ -127,13 +127,12 @@ class CrossAttention(nn.Module):
 
 
 class DecoderBlock(nn.Module):
-    def __init__(self, dim, num_heads, dim_q = None, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0., ffn_dimension=16, ffn_function='relu',
-                 attn_name='mha',
+    def __init__(self, config, dim, num_heads, dim_q = None, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0., 
                  drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
         super().__init__()
         self.norm1 = norm_layer(dim)
         self.self_attn = self.build_self(
-            dim, num_heads, qkv_bias, attn_drop, drop, ffn_dimension, ffn_function, attn_name
+            dim, num_heads, config, qkv_bias, attn_drop, drop
         )
         # self.self_attn = Attention(
         #     dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
@@ -195,12 +194,12 @@ class DecoderBlock(nn.Module):
     
     def build_self(self, embed_dim: int,
                    num_heads: int,
+                   config,
                    add_qkv_bias=None,
                    attn_dropout=0.,
                    dropout=0.,
-                   ffn_dimension=16,
-                   ffn_function='relu',
-                   attn_name='amlp'):
+                   ):
+        attn_name = config.self_attn_name
         if attn_name.lower() == 'amlp':
             attn = AMLP(
                 bias=add_qkv_bias,
@@ -208,8 +207,15 @@ class DecoderBlock(nn.Module):
                 dropout = dropout,
                 embed_dim=embed_dim,
                 num_heads=num_heads,
-                ffn_dimension=ffn_dimension,
-                ffn_function=ffn_function
+                ffn_dimension=config.self_ffn_dimension,
+                ffn_function=config.self_ffn_function
+            )
+        elif attn_name.lower() == 'abc':
+            attn = ABC(
+                num_heads=num_heads,
+                embed_dim=embed_dim,
+                dropout=dropout,
+                num_landmarks=config.self_landmarks
             )
         else:
             attn = Attention(
@@ -220,17 +226,55 @@ class DecoderBlock(nn.Module):
                 attn_drop=attn_dropout,
                 proj_drop=dropout
             )
+        print("Self attention:", attn.__class__)
+        return attn
+    
+    def build_cross(self, embed_dim: int,
+                   num_heads: int,
+                   config,
+                   add_qkv_bias=None,
+                   attn_dropout=0.,
+                   dropout=0.,
+                   ):
+        attn_name = config.cross_attn_name.lower()
+        if attn_name == 'amlp':
+            attn = AMLP(
+                bias=add_qkv_bias,
+                add_bias_kv=add_qkv_bias,
+                dropout = dropout,
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                ffn_dimension=config.cross_ffn_dimension,
+                ffn_function=config.cross_ffn_function
+            )
+        elif attn_name == 'abc':
+            attn = ABC(
+                num_heads=num_heads,
+                embed_dim=embed_dim,
+                dropout=dropout,
+                num_landmarks=config.cross_landmarks
+            )
+        else:
+            attn = Attention(
+                dim=embed_dim,
+                num_heads=num_heads,
+                qkv_bias=add_qkv_bias,
+                qk_scale=None,
+                attn_drop=attn_dropout,
+                proj_drop=dropout
+            )
+        print("Cross attention:", attn.__class__)
         return attn
 
 
 class Block(nn.Module):
 
-    def __init__(self, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0., attn_name='mha', ffn_dimension=16, ffn_function='relu',
+    def __init__(self, config, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0., self_attn_name='mha', self_ffn_dimension=16, self_ffn_function='relu',
                  drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
         super().__init__()
         self.norm1 = norm_layer(dim)
         self.attn = self.build_self(
-            dim, num_heads, qkv_bias, attn_drop, drop, ffn_dimension, ffn_function, attn_name
+            dim, num_heads, config, qkv_bias, attn_drop, drop
         )
         # self.attn = Attention(
         #     dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
@@ -266,21 +310,27 @@ class Block(nn.Module):
     
     def build_self(self, embed_dim: int,
                    num_heads: int,
+                   config,
                    add_qkv_bias=None,
                    attn_dropout=0.,
-                   dropout=0.,
-                   ffn_dimension=16,
-                   ffn_function='relu',
-                   attn_name='amlp'):
-        if attn_name.lower() == 'amlp':
+                   dropout=0.):
+        attn_name = config.self_attn_name.lower()
+        if attn_name == 'amlp':
             attn = AMLP(
                 bias=add_qkv_bias,
                 add_bias_kv=add_qkv_bias,
                 dropout = dropout,
                 embed_dim=embed_dim,
                 num_heads=num_heads,
-                ffn_dimension=ffn_dimension,
-                ffn_function=ffn_function
+                ffn_dimension=config.self_ffn_dimension,
+                ffn_function=config.self_ffn_function
+            )
+        elif attn_name == 'abc':
+            attn = ABC(
+                num_heads=num_heads,
+                embed_dim=embed_dim,
+                dropout=dropout,
+                num_landmarks=config.self_landmarks
             )
         else:
             attn = Attention(
@@ -291,6 +341,7 @@ class Block(nn.Module):
                 attn_drop=attn_dropout,
                 proj_drop=dropout
             )
+        print("Self attention:", attn.__class__)
         return attn
 
 
@@ -298,7 +349,7 @@ class Block(nn.Module):
 class PCTransformer(nn.Module):
     """ Vision Transformer with support for point cloud completion
     """
-    def __init__(self, in_chans=3, embed_dim=768, depth=[6, 6], num_heads=6, mlp_ratio=2., qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0.,
+    def __init__(self, config, in_chans=3, embed_dim=768, depth=[6, 6], num_heads=6, mlp_ratio=2., qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0.,
                         num_query = 224, knn_layer = -1):
         super().__init__()
 
@@ -334,7 +385,7 @@ class PCTransformer(nn.Module):
 
         self.encoder = nn.ModuleList([
             Block(
-                dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
+                config=config, dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
                 drop=drop_rate, attn_drop=attn_drop_rate)
             for i in range(depth[0])])
 
@@ -369,7 +420,7 @@ class PCTransformer(nn.Module):
 
         self.decoder = nn.ModuleList([
             DecoderBlock(
-                dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
+                config=config, dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
                 drop=drop_rate, attn_drop=attn_drop_rate)
             for i in range(depth[1])])
 

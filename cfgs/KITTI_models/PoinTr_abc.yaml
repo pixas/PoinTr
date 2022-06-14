@@ -1,10 +1,9 @@
 optimizer : {
   type: AdamW,
   kwargs: {
-  lr : 0.0005, 
+  lr : 0.0001, 
   weight_decay : 0.0005
 }}
-
 scheduler: {
   type: LambdaLR,
   kwargs: {
@@ -12,7 +11,6 @@ scheduler: {
   lr_decay: 0.9,
   lowest_decay: 0.02  # min lr = lowest_decay * lr
 }}
-
 bnmscheduler: {
   type: Lambda,
   kwargs: {
@@ -23,18 +21,18 @@ bnmscheduler: {
 }}
 
 dataset : {
-  train : { _base_: cfgs/dataset_configs/PCN.yaml, 
+  train : { _base_: cfgs/dataset_configs/PCNCars.yaml, 
             others: {subset: 'train'}},
-  val : { _base_: cfgs/dataset_configs/PCN.yaml, 
+  val : { _base_: cfgs/dataset_configs/PCNCars.yaml, 
             others: {subset: 'test'}},
-  test : { _base_: cfgs/dataset_configs/PCN.yaml, 
+  test : { _base_: cfgs/dataset_configs/KITTI.yaml, 
             others: {subset: 'test'}}}
+
 model : {
-  NAME: PoinTr, num_pred: 14336, num_query: 224, knn_layer: 1, trans_dim: 384, self_attn_name: 'amlp', self_ffn_dimension: 16, self_ffn_function: 'relu',
-  cross_attn_name: 'mha', cross_ffn_dimension: 32, cross_ffn_function: 'softmax'}
-  
-total_bs : 48 
+  NAME: PoinTr, num_pred: 14336, num_query: 224, knn_layer: 1, trans_dim: 384, self_attn_name: 'abc', self_ffn_dimension: 16, self_ffn_function: 'relu',
+  cross_attn_name: 'abc', cross_ffn_dimension: 32, cross_ffn_function: 'softmax'}
+total_bs : 64
 step_per_update : 1
-max_epoch : 300
+max_epoch : 600
 
 consider_metric: CDL1
