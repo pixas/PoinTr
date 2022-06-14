@@ -208,7 +208,7 @@ class DecoderBlock(nn.Module):
                 embed_dim=embed_dim,
                 num_heads=num_heads,
                 ffn_dimension=config.self_ffn_dimension,
-                ffn_function=config.self_ffn_function
+                activation_fn=config.self_ffn_function
             )
         elif attn_name.lower() == 'abc':
             attn = ABC(
@@ -323,7 +323,7 @@ class Block(nn.Module):
                 embed_dim=embed_dim,
                 num_heads=num_heads,
                 ffn_dimension=config.self_ffn_dimension,
-                ffn_function=config.self_ffn_function
+                activation_fn=config.self_ffn_function
             )
         elif attn_name == 'abc':
             attn = ABC(
