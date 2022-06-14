@@ -106,7 +106,7 @@ class CrossAttention(nn.Module):
         self.proj = nn.Linear(out_dim, out_dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
-    def forward(self, q, v):
+    def forward(self, q, k, v):
         B, N, _ = q.shape
         C = self.out_dim
         k = v
@@ -139,6 +139,9 @@ class DecoderBlock(nn.Module):
         dim_q = dim_q or dim
         self.norm_q = norm_layer(dim_q)
         self.norm_v = norm_layer(dim)
+        self.attn = self.build_cross(
+            dim, num_heads, config, add_qkv_bias=qkv_bias, attn_dropout=attn_drop, dropout=drop
+        )
         self.attn = CrossAttention(
             dim, dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
         # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
@@ -178,7 +181,7 @@ class DecoderBlock(nn.Module):
 
         norm_q = self.norm_q(q)
         norm_v = self.norm_v(v)
-        q_2 = self.attn(norm_q, norm_v)
+        q_2 = self.attn(norm_q, norm_v, norm_v)
         if isinstance(q_2, tuple):
             q_2 = q_2[0]
         if cross_knn_index is not None:
@@ -257,14 +260,8 @@ class DecoderBlock(nn.Module):
                 num_landmarks=config.cross_landmarks
             )
         else:
-            attn = Attention(
-                dim=embed_dim,
-                num_heads=num_heads,
-                qkv_bias=add_qkv_bias,
-                qk_scale=None,
-                attn_drop=attn_dropout,
-                proj_drop=dropout
-            )
+            attn = CrossAttention(
+            embed_dim, embed_dim, num_heads=num_heads, qkv_bias=add_qkv_bias, qk_scale=None, attn_drop=attn_dropout, proj_drop=dropout)
         print("Cross attention:", attn.__class__)
         return attn
 
