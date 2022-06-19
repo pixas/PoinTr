@@ -4,7 +4,7 @@ import os, sys
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 import data_transforms
-from .io import IO
+from .io import IO, CephManager
 import json
 from .build import DATASETS
 
@@ -18,9 +18,11 @@ class KITTI(data.Dataset):
         self.category_file = config.CATEGORY_FILE_PATH
         self.npoints = config.N_POINTS
         self.subset = config.subset
+        self.ceph_reader_writer = CephManager()
         assert self.subset == 'test'
 
         self.dataset_categories = []
+        # self.datasfet_categories = self.ceph_reader_writer.load_json(self.category_file)
         with open(self.category_file) as f:
             self.dataset_categories = json.loads(f.read())
         self.transforms = data_transforms.Compose([{

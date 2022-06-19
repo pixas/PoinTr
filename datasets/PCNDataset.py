@@ -4,7 +4,7 @@ import os, sys
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 import data_transforms
-from .io import IO
+from .io import IO, CephManager
 import random
 import os
 import json
@@ -25,9 +25,11 @@ class PCN(data.Dataset):
         self.npoints = config.N_POINTS
         self.subset = config.subset
         self.cars = config.CARS
-
+        self.ceph_reader_writer = CephManager()
         # Load the dataset indexing file
         self.dataset_categories = []
+        # self.dataset_categories = self.ceph_reader_writer.load_json(self.category_file)
+        
         with open(self.category_file) as f:
             self.dataset_categories = json.loads(f.read())
             if config.CARS:
