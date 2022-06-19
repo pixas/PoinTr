@@ -28,7 +28,7 @@ dataset : {
   test : { _base_: cfgs/dataset_configs/ShapeNet-55.yaml, 
             others: {subset: 'test'}}}
 model : {
-  NAME: PoinTr, num_pred: 6144, num_query: 96, knn_layer: 1, trans_dim: 384, self_attn_name: 'amlp', self_ffn_dimension: 16, self_ffn_function: 'relu',
+  NAME: PoinTr, num_pred: 6144, num_query: 96, knn_layer: 1, trans_dim: 384, self_attn_name: 'amlp', self_ffn_dimension: 64, self_ffn_function: 'softmax',
   cross_attn_name: 'mha', cross_ffn_dimension: 32, cross_ffn_function: 'softmax'}
 total_bs : 96
 step_per_update : 1
