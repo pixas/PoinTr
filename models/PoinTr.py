@@ -117,7 +117,7 @@ class PoinTr(nn.Module):
 
         # cat the input
         # if not use fps, directly feed xyz 
-        inp_sparse = fps(xyz, self.num_query)
+        inp_sparse = xyz
         coarse_point_cloud = torch.cat([coarse_point_cloud, inp_sparse], dim=1).contiguous()
         rebuild_points = torch.cat([rebuild_points, xyz],dim=1).contiguous()
 

@@ -7,7 +7,7 @@ from .dgcnn_group import DGCNN_Grouper
 from utils.logger import *
 import numpy as np
 from knn_cuda import KNN
-from efficient_attention import AMLP, ABC
+from efficient_attention import AMLP, ABC, AMLPSeq
 knn = KNN(k=8, transpose_mode=False)
 
 def get_knn_index(coor_q, coor_k=None):
@@ -252,6 +252,16 @@ class DecoderBlock(nn.Module):
                 ffn_dimension=config.cross_ffn_dimension,
                 ffn_function=config.cross_ffn_function
             )
+        elif attn_name == 'amlp_seq':
+            attn = AMLPSeq(
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                bias=add_qkv_bias,
+                add_bias_kv=add_qkv_bias,
+                dropout=dropout,
+                ffn_dimension=config.cross_ffn_dimension,
+                ffn_function=config.cross_ffn_function
+            )
         elif attn_name == 'abc':
             attn = ABC(
                 num_heads=num_heads,
@@ -268,7 +278,7 @@ class DecoderBlock(nn.Module):
 
 class Block(nn.Module):
 
-    def __init__(self, config, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0., self_attn_name='mha', self_ffn_dimension=16, self_ffn_function='relu',
+    def __init__(self, config, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0., 
                  drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
         super().__init__()
         self.norm1 = norm_layer(dim)
