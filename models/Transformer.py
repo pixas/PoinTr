@@ -486,6 +486,7 @@ class PCTransformer(nn.Module):
         # pos = self.pos_encoding_sin_wave(coor).transpose(1,2)
         pos =  self.pos_embed(coor).transpose(1,2)
         x = self.input_proj(f).transpose(1,2)
+        print(x.shape)
         # cls_pos = self.cls_pos.expand(bs, -1, -1)
         # cls_token = self.cls_pos.expand(bs, -1, -1)
         # x = torch.cat([cls_token, x], dim=1)
