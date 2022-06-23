@@ -106,6 +106,8 @@ class PoinTr(nn.Module):
         # coarse_point_cloud = self.refine_coarse(rebuild_feature).reshape(B, M, 3)
 
         # NOTE: foldingNet
+        # coarse point cloud c_i in paper
+        # relative xyz: f(H_i) in paper
         relative_xyz = self.foldingnet(rebuild_feature).reshape(B, M, 3, -1)    # B M 3 S
         rebuild_points = (relative_xyz + coarse_point_cloud.unsqueeze(-1)).transpose(2,3).reshape(B, -1, 3)  # B N 3
 
@@ -114,6 +116,7 @@ class PoinTr(nn.Module):
         # rebuild_points = (relative_xyz.reshape(B,M,3,-1) + coarse_point_cloud.unsqueeze(-1)).transpose(2,3).reshape(B, -1, 3)
 
         # cat the input
+        # if not use fps, directly feed xyz 
         inp_sparse = fps(xyz, self.num_query)
         coarse_point_cloud = torch.cat([coarse_point_cloud, inp_sparse], dim=1).contiguous()
         rebuild_points = torch.cat([rebuild_points, xyz],dim=1).contiguous()
