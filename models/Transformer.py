@@ -250,7 +250,7 @@ class DecoderBlock(nn.Module):
                 embed_dim=embed_dim,
                 num_heads=num_heads,
                 ffn_dimension=config.cross_ffn_dimension,
-                ffn_function=config.cross_ffn_function
+                activation_fn=config.cross_ffn_function
             )
         elif attn_name == 'amlp_seq':
             attn = AMLPSeq(
@@ -260,7 +260,7 @@ class DecoderBlock(nn.Module):
                 add_bias_kv=add_qkv_bias,
                 dropout=dropout,
                 ffn_dimension=config.cross_ffn_dimension,
-                ffn_function=config.cross_ffn_function
+                activation_fn=config.cross_ffn_function
             )
         elif attn_name == 'abc':
             attn = ABC(
