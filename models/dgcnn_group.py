@@ -89,7 +89,7 @@ class DGCNN_Grouper(nn.Module):
         f = f.max(dim=-1, keepdim=False)[0]
 
         coor_q, f_q = self.fps_downsample(coor, f, 1536)
-        # coor_q, f_q = coor, f
+        coor_q, f_q = coor, f
         f = self.get_graph_feature(coor_q, f_q, coor, f)
         f = self.layer2(f)
         f = f.max(dim=-1, keepdim=False)[0]
@@ -99,7 +99,8 @@ class DGCNN_Grouper(nn.Module):
         f = self.layer3(f)
         f = f.max(dim=-1, keepdim=False)[0]
 
-        coor_q, f_q = self.fps_downsample(coor, f, 1024)
+        # coor_q, f_q = self.fps_downsample(coor, f, 1024)
+        coor_q, f_q = coor, f
         f = self.get_graph_feature(coor_q, f_q, coor, f)
         f = self.layer4(f)
         f = f.max(dim=-1, keepdim=False)[0]
