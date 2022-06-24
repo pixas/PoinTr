@@ -65,6 +65,9 @@ class PoinTr(nn.Module):
         self.knn_layer = config.knn_layer
         self.num_pred = config.num_pred
         self.num_query = config.num_query
+        if "self_attn_name" not in config:
+            config.self_attn_name = 'mha'
+            config.cross_attn_name = 'mha'
 
         self.fold_step = int(pow(self.num_pred//self.num_query, 0.5) + 0.5)
         self.base_model = PCTransformer(config, in_chans = 3, embed_dim = self.trans_dim, depth = [6, 8], drop_rate = 0., num_query = self.num_query, knn_layer = self.knn_layer)
