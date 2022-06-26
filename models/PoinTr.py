@@ -1,8 +1,10 @@
+from time import time
 import torch
 from torch import nn
 
 from pointnet2_ops import pointnet2_utils
 from extensions.chamfer_dist import ChamferDistanceL1
+from utils.logger import print_log
 from .Transformer import PCTransformer
 from .build import MODELS
 
