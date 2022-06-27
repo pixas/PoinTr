@@ -1,0 +1,38 @@
+optimizer : {
+  type: AdamW,
+  kwargs: {
+  lr : 0.0001, 
+  weight_decay : 0.0005
+}}
+scheduler: {
+  type: LambdaLR,
+  kwargs: {
+  decay_step: 21,
+  lr_decay: 0.9,
+  lowest_decay: 0.02  # min lr = lowest_decay * lr
+}}
+bnmscheduler: {
+  type: Lambda,
+  kwargs: {
+  decay_step: 21,
+  bn_decay: 0.5,
+  bn_momentum: 0.9,
+  lowest_decay: 0.01
+}}
+
+dataset : {
+  train : { _base_: cfgs/dataset_configs/PCNCars.yaml, 
+            others: {subset: 'train'}},
+  val : { _base_: cfgs/dataset_configs/PCNCars.yaml, 
+            others: {subset: 'test'}},
+  test : { _base_: cfgs/dataset_configs/KITTI.yaml, 
+            others: {subset: 'test'}}}
+
+model : {
+  NAME: PoinTr, num_pred: 14336, num_query: 2048, knn_layer: 1, trans_dim: 384, self_attn_name: 'amlp', self_ffn_dimension: 64, self_ffn_function: 'relu',
+  cross_attn_name: 'amlp_seq', cross_ffn_dimension: 64, cross_ffn_function: 'softmax'}
+total_bs : 64
+step_per_update : 1
+max_epoch : 600
+
+consider_metric: CDL1
