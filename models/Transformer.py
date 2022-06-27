@@ -7,7 +7,7 @@ from .dgcnn_group import DGCNN_Grouper
 from utils.logger import *
 import numpy as np
 from knn_cuda import KNN
-from efficient_attention import AMLP, ABC
+from efficient_attention import AMLP, ABC, AMLPSeq
 knn = KNN(k=8, transpose_mode=False)
 
 def get_knn_index(coor_q, coor_k=None):
@@ -130,6 +130,7 @@ class DecoderBlock(nn.Module):
     def __init__(self, config, dim, num_heads, dim_q = None, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0., 
                  drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
         super().__init__()
+        self.config = config
         self.norm1 = norm_layer(dim)
         self.self_attn = self.build_self(
             dim, num_heads, config, qkv_bias, attn_drop, drop
@@ -142,8 +143,8 @@ class DecoderBlock(nn.Module):
         self.attn = self.build_cross(
             dim, num_heads, config, add_qkv_bias=qkv_bias, attn_dropout=attn_drop, dropout=drop
         )
-        self.attn = CrossAttention(
-            dim, dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+        # self.attn = CrossAttention(
+        #     dim, dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
         # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
@@ -167,9 +168,12 @@ class DecoderBlock(nn.Module):
     def forward(self, q, v, self_knn_index=None, cross_knn_index=None):
         # q = q + self.drop_path(self.self_attn(self.norm1(q)))
         norm_q = self.norm1(q)
-        q_1 = self.self_attn(norm_q)
-        if isinstance(q_1, tuple):
-            q_1 = q_1[0]
+        if self.config.self_attn_name != 'mha':
+            q_1, _ = self.self_attn(norm_q.reshape(norm_q.shape[1], norm_q.shape[0], -1))
+            q_1 = q_1.reshape(q_1.shape[1], q_1.shape[0], -1)
+        else:
+            q_1 = self.self_attn(norm_q)
+
         if self_knn_index is not None:
             knn_f = get_graph_feature(norm_q, self_knn_index)
             knn_f = self.knn_map(knn_f)
@@ -181,9 +185,14 @@ class DecoderBlock(nn.Module):
 
         norm_q = self.norm_q(q)
         norm_v = self.norm_v(v)
-        q_2 = self.attn(norm_q, norm_v, norm_v)
-        if isinstance(q_2, tuple):
-            q_2 = q_2[0]
+        if self.config.cross_attn_name != 'mha':
+            reshaped_norm_v = norm_v.reshape(norm_v.shape[1], norm_v.shape[0], -1)
+            q_2, _ = self.attn(norm_q.reshape(norm_q.shape[1], norm_q.shape[0], -1),
+                               reshaped_norm_v, reshaped_norm_v)
+            q_2 = q_2.reshape(q_2.shape[1], q_2.shape[0], -1)
+        else:
+            q_2 = self.attn(norm_q, norm_v, norm_v)
+
         if cross_knn_index is not None:
             knn_f = get_graph_feature(norm_v, cross_knn_index, norm_q)
             knn_f = self.knn_map_cross(knn_f)
@@ -250,7 +259,17 @@ class DecoderBlock(nn.Module):
                 embed_dim=embed_dim,
                 num_heads=num_heads,
                 ffn_dimension=config.cross_ffn_dimension,
-                ffn_function=config.cross_ffn_function
+                activation_fn=config.cross_ffn_function
+            )
+        elif attn_name == 'amlp_seq':
+            attn = AMLPSeq(
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                bias=add_qkv_bias,
+                add_bias_kv=add_qkv_bias,
+                dropout=dropout,
+                ffn_dimension=config.cross_ffn_dimension,
+                activation_fn=config.cross_ffn_function
             )
         elif attn_name == 'abc':
             attn = ABC(
@@ -268,10 +287,11 @@ class DecoderBlock(nn.Module):
 
 class Block(nn.Module):
 
-    def __init__(self, config, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0., self_attn_name='mha', self_ffn_dimension=16, self_ffn_function='relu',
+    def __init__(self, config, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0., 
                  drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
         super().__init__()
         self.norm1 = norm_layer(dim)
+        self.config = config
         self.attn = self.build_self(
             dim, num_heads, config, qkv_bias, attn_drop, drop
         )
@@ -294,9 +314,13 @@ class Block(nn.Module):
     def forward(self, x, knn_index = None):
         # x = x + self.drop_path(self.attn(self.norm1(x)))
         norm_x = self.norm1(x)
-        x_1 = self.attn(norm_x)
-        if isinstance(x_1, tuple):
-            x_1 = x_1[0]
+        if self.config.self_attn_name != 'mha':
+            x_1, _ = self.attn(norm_x.reshape(norm_x.shape[1], norm_x.shape[0], -1))
+            x_1 = x_1.reshape(x_1.shape[1], x_1.shape[0], -1)
+        else:
+            x_1 = self.attn(norm_x)
+        # if isinstance(x_1, tuple):
+        #     x_1 = x_1[0]
         if knn_index is not None:
             knn_f = get_graph_feature(norm_x, knn_index)
             knn_f = self.knn_map(knn_f)
@@ -476,6 +500,7 @@ class PCTransformer(nn.Module):
         # pos = self.pos_encoding_sin_wave(coor).transpose(1,2)
         pos =  self.pos_embed(coor).transpose(1,2)
         x = self.input_proj(f).transpose(1,2)
+
         # cls_pos = self.cls_pos.expand(bs, -1, -1)
         # cls_token = self.cls_pos.expand(bs, -1, -1)
         # x = torch.cat([cls_token, x], dim=1)
