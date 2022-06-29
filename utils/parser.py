@@ -154,8 +154,8 @@ def create_experiment_dir(args):
 
         print('Create experiment path successfully at %s' % args.experiment_path)
     mapping_path = {'s3://NLP/jsy': "/mnt/lustre/jiangshuyang"}
-    args.tfboard_path = str.replace(args.tfboard_path, 's3://NLP/jsy', mapping_path['s3://NLP/jsy'])
-    if not os.path.exists(args.tfboard_path):
-        os.makedirs(args.tfboard_path)
-        print('Create TFBoard path successfully at %s' % args.tfboard_path)
+    tfboard_path = str.replace(args.tfboard_path, 's3://NLP/jsy', mapping_path['s3://NLP/jsy'])
+    if not os.path.exists(tfboard_path):
+        os.makedirs(tfboard_path)
+        print('Create TFBoard path successfully at %s' % tfboard_path)
 

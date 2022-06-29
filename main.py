@@ -7,6 +7,13 @@ import time
 import os
 import torch
 from tensorboardX import SummaryWriter
+try:
+    from petrel_client.client import Client
+except ImportError:
+    # raise ImportError('Please install petrel_client')
+    logging.warning('Please install petrel_client''Please install petrel_client')
+
+import io
 
 def main():
     # args
@@ -31,8 +38,10 @@ def main():
     # define the tensorboard writer
     if not args.test:
         if args.local_rank == 0:
-            train_writer = SummaryWriter(os.path.join(args.tfboard_path, 'train'))
-            val_writer = SummaryWriter(os.path.join(args.tfboard_path, 'test'))
+            mapping_path = {'s3://NLP/jsy': "/mnt/lustre/jiangshuyang"}
+            tfboard_path = str.replace(args.tfboard_path, 's3://NLP/jsy', mapping_path['s3://NLP/jsy'])
+            train_writer = SummaryWriter(os.path.join(tfboard_path, 'train'))
+            val_writer = SummaryWriter(os.path.join(tfboard_path, 'test'))
         else:
             train_writer = None
             val_writer = None
@@ -62,6 +71,10 @@ def main():
         test_net(args, config)
     else:
         run_net(args, config, train_writer, val_writer)
+    mapping_path = {'s3://NLP/jsy': "/mnt/lustre/jiangshuyang"}
+
+    log_data = log_file.replace('s3://NLP/jsy', mapping_path['s3://NLP/jsy'])
+    os.system("aws --no-sign-request s3 cp {}/ {}/".format(log_data, log_file))
 
 
 if __name__ == '__main__':
