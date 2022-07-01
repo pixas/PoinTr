@@ -2,7 +2,7 @@ import os
 import torch
 import numpy as np
 import torch.utils.data as data
-from .io import IO
+from .io import IO, CephManager
 from .build import DATASETS
 import logging
 
@@ -13,8 +13,9 @@ class ShapeNet(data.Dataset):
         self.pc_path = config.PC_PATH
         self.subset = config.subset
         self.npoints = config.N_POINTS
+        self.ceph_reader_writer = CephManager()
         self.data_list_file = os.path.join(self.data_root, f'{self.subset}.txt')
-
+        
         print(f'[DATASET] Open file {self.data_list_file}')
         with open(self.data_list_file, 'r') as f:
             lines = f.readlines()

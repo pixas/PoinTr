@@ -269,7 +269,8 @@ class DecoderBlock(nn.Module):
                 add_bias_kv=add_qkv_bias,
                 dropout=dropout,
                 ffn_dimension=config.cross_ffn_dimension,
-                activation_fn=config.cross_ffn_function
+                activation_fn=config.cross_ffn_function,
+                conv_kernel_size=5
             )
         elif attn_name == 'abc':
             attn = ABC(

@@ -1,4 +1,6 @@
 import logging
+import os
+from pathlib import Path
 import torch.distributed as dist
 
 logger_initialized = {}
@@ -79,7 +81,13 @@ def get_logger(name, log_file=None, log_level=logging.INFO, file_mode='w'):
         # Here, the default behaviour of the official logger is 'a'. Thus, we
         # provide an interface to change the file mode to the default
         # behaviour.
-        file_handler = logging.FileHandler(log_file, file_mode)
+        mapping_path = {'s3://NLP/jsy': "/mnt/lustre/jiangshuyang"}
+        log_dir = log_file.replace('s3://NLP/jsy', mapping_path['s3://NLP/jsy'])
+        print(log_dir)
+        if not os.path.exists(str(Path(log_dir).parent)):
+            os.makedirs(str(Path(log_dir).parent))
+        print(str(Path(log_dir).parent))
+        file_handler = logging.FileHandler(log_dir, file_mode)
         handlers.append(file_handler)
 
     formatter = logging.Formatter(
