@@ -72,9 +72,13 @@ def main():
     else:
         run_net(args, config, train_writer, val_writer)
     mapping_path = {'s3://NLP/jsy': "/mnt/lustre/jiangshuyang"}
-
+    client = Client("~/petreloss.conf")
     log_data = log_file.replace('s3://NLP/jsy', mapping_path['s3://NLP/jsy'])
-    os.system("aws --no-sign-request s3 cp {}/ {}/".format(log_data, log_file))
+    with open(log_data) as f:
+        
+        client.put(log_file, bytes(f.read(), encoding='utf-8'))
+    os.system("rm {}".format(log_data))
+    # os.system("aws --no-sign-request s3 cp {}/ {}/".format(log_data, log_file))
 
 
 if __name__ == '__main__':
