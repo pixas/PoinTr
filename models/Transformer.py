@@ -383,7 +383,7 @@ class PCTransformer(nn.Module):
 
         print_log(' Transformer with knn_layer %d' % self.knn_layer, logger='MODEL')
 
-        self.grouper = DGCNN_Grouper()  # B 3 N to B C(3) N(128) and B C(128) N(128)
+        self.grouper = DGCNN_Grouper(config.group_points1, config.group_points2)  # B 3 N to B C(3) N(128) and B C(128) N(128)
 
         self.pos_embed = nn.Sequential(
             nn.Conv1d(in_chans, 128, 1),

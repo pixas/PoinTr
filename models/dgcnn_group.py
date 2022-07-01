@@ -6,11 +6,20 @@ knn = KNN(k=16, transpose_mode=False)
 
 
 class DGCNN_Grouper(nn.Module):
-    def __init__(self):
+    def __init__(self, group_points1: int = None, group_points2: int = None):
         super().__init__()
         '''
         K has to be 16
         '''
+        if group_points1 is None:
+            self.group_points1 = 512
+        else:
+            self.group_points1 = group_points1
+            
+        if group_points2 is None:
+            self.group_points2 = 128
+        else:
+            self.group_points2 = group_points2
         self.input_trans = nn.Conv1d(3, 8, 1)
 
         self.layer1 = nn.Sequential(nn.Conv2d(16, 32, kernel_size=1, bias=False),
@@ -88,7 +97,7 @@ class DGCNN_Grouper(nn.Module):
         f = self.layer1(f)
         f = f.max(dim=-1, keepdim=False)[0]
 
-        coor_q, f_q = self.fps_downsample(coor, f, 2000)
+        coor_q, f_q = self.fps_downsample(coor, f, self.group_points1)
         # coor_q, f_q = coor, f
         f = self.get_graph_feature(coor_q, f_q, coor, f)
         f = self.layer2(f)
@@ -99,8 +108,10 @@ class DGCNN_Grouper(nn.Module):
         f = self.layer3(f)
         f = f.max(dim=-1, keepdim=False)[0]
 
-        # coor_q, f_q = self.fps_downsample(coor, f, 1024)
-        coor_q, f_q = coor, f
+        if self.group_points1 != self.group_points2:
+            coor_q, f_q = self.fps_downsample(coor, f, 1024)
+        else:
+            coor_q, f_q = coor, f
         f = self.get_graph_feature(coor_q, f_q, coor, f)
         f = self.layer4(f)
         f = f.max(dim=-1, keepdim=False)[0]
