@@ -1,3 +1,4 @@
+import io
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -8,7 +9,7 @@ import torch.nn.functional as F
 import os
 from collections import abc
 from pointnet2_ops import pointnet2_utils
-
+from petrel_client.client import Client
 
 def fps(data, number):
     '''
@@ -222,14 +223,26 @@ def visualize_KITTI(path, data_list, titles = ['input','pred'], cmap=['bwr','aut
         ax.set_ylim(ylim)
         ax.set_zlim(zlim)
     plt.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0.2, hspace=0)
-    if not os.path.exists(path):
-        os.makedirs(path)
+    # if not os.path.exists(path):
+    #     os.makedirs(path)
 
-    pic_path = path + '.png'
+    pic_path = path.replace("s3://NLP/jsy", "/mnt/lustre/jiangshuyang") 
+    if not os.path.exists(pic_path):
+        os.makedirs(pic_path)
+    pic_path = pic_path + '.png'
     fig.savefig(pic_path)
-
-    np.save(os.path.join(path, 'input.npy'), data_list[0].numpy())
-    np.save(os.path.join(path, 'pred.npy'), data_list[1].numpy())
+    os.system("aws s3 cp {} {}".format(pic_path, pic_path.replace("/mnt/lustre/jiangshuyang", "s3://NLP/jsy")))
+    os.system("rm -f {}".format(pic_path))
+    client = Client("~/petreloss.conf")
+    with io.BytesIO() as f:
+        
+        np.save(f, data_list[0].numpy())
+        client.put(os.path.join(path, 'input.npy'), f.getvalue())
+    
+    with io.BytesIO() as f:
+        np.save(f, data_list[1].numpy())
+        client.put(os.path.join(path, 'pred.npy'), f.getvalue())
+        
     plt.close(fig)
 
 

@@ -21,17 +21,17 @@ bnmscheduler: {
 }}
 
 dataset : {
-  train : { _base_: cfgs/dataset_configs/PCNCars.yaml, 
+  train : { _base_: cfgs/dataset_configs/PCN.yaml, 
             others: {subset: 'train'}},
-  val : { _base_: cfgs/dataset_configs/PCNCars.yaml, 
+  val : { _base_: cfgs/dataset_configs/PCN.yaml, 
             others: {subset: 'test'}},
-  test : { _base_: cfgs/dataset_configs/KITTI.yaml, 
+  test : { _base_: cfgs/dataset_configs/PCN.yaml, 
             others: {subset: 'test'}}}
 
 model : {
-  NAME: PoinTr, num_pred: 14336, num_query: 3584, knn_layer: 1, trans_dim: 384, self_attn_name: 'amlp', self_ffn_dimension: 64, self_ffn_function: 'relu',
+  NAME: PoinTr, num_pred: 14336, num_query: 3584, knn_layer: 1, trans_dim: 384, self_attn_name: 'mha', self_ffn_dimension: 64, self_ffn_function: 'relu',
   cross_attn_name: 'amlp_seq', cross_ffn_dimension: 64, cross_ffn_function: 'softmax',
-  group_points1: 2000, group_points2: 2000}
+  group_points1: 1536, group_points2: 1536, conv_size: 5}
 total_bs : 48
 step_per_update : 1
 max_epoch : 300

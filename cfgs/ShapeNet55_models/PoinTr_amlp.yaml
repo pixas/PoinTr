@@ -1,7 +1,7 @@
 optimizer : {
   type: AdamW,
   kwargs: {
-  lr : 0.0005, 
+  lr : 0.0001, 
   weight_decay : 0.0005
 }}
 scheduler: {
@@ -28,8 +28,9 @@ dataset : {
   test : { _base_: cfgs/dataset_configs/ShapeNet-55.yaml, 
             others: {subset: 'test'}}}
 model : {
-  NAME: PoinTr, num_pred: 6144, num_query: 96, knn_layer: 1, trans_dim: 384, self_attn_name: 'amlp', self_ffn_dimension: 64, self_ffn_function: 'softmax',
-  cross_attn_name: 'mha', cross_ffn_dimension: 32, cross_ffn_function: 'softmax'}
+  NAME: PoinTr, num_pred: 6144, num_query: 3072, knn_layer: 1, trans_dim: 384, self_attn_name: 'amlp', self_ffn_dimension: 64, self_ffn_function: 'softmax',
+  cross_attn_name: 'amlp_seq', cross_ffn_dimension: 32, cross_ffn_function: 'softmax',
+  group_points1: 1536, group_points2: 1536, conv_size: None}
 total_bs : 96
 step_per_update : 1
 max_epoch : 200

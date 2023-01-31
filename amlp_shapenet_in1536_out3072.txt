@@ -1,0 +1,114 @@
+Create experiment path successfully at s3://NLP/jsy/checkpoints/pointr_experiments/PoinTr_amlp/ShapeNet55_models/amlp_in1536_out3072
+Create experiment path successfully at s3://NLP/jsy/checkpoints/pointr_experiments/PoinTr_amlp/ShapeNet55_models/amlp_in1536_out3072
+Create experiment path successfully at s3://NLP/jsy/checkpoints/pointr_experiments/PoinTr_amlp/ShapeNet55_models/amlp_in1536_out3072
+Create experiment path successfully at s3://NLP/jsy/checkpoints/pointr_experiments/PoinTr_amlp/ShapeNet55_models/amlp_in1536_out3072
+init distributed in rank 2
+init distributed in rank 3init distributed in rank 1
+
+init distributed in rank 0
+/mnt/lustre/jiangshuyang/checkpoints/pointr_experiments/PoinTr_amlp/ShapeNet55_models/amlp_in1536_out3072/20220714_132357.log
+/mnt/lustre/jiangshuyang/checkpoints/pointr_experiments/PoinTr_amlp/ShapeNet55_models/amlp_in1536_out3072
+[DATASET] Open file data/ShapeNet55-34/ShapeNet-55/train.txt[DATASET] Open file data/ShapeNet55-34/ShapeNet-55/train.txt
+
+[DATASET] Open file data/ShapeNet55-34/ShapeNet-55/train.txt
+[DATASET] Open file data/ShapeNet55-34/ShapeNet-55/train.txt
+[DATASET] 41952 instances were loaded
+[DATASET] 41952 instances were loaded
+[DATASET] 41952 instances were loaded
+[DATASET] Open file data/ShapeNet55-34/ShapeNet-55/test.txt[DATASET] Open file data/ShapeNet55-34/ShapeNet-55/test.txt
+
+[DATASET] Open file data/ShapeNet55-34/ShapeNet-55/test.txt
+[DATASET] 41952 instances were loaded
+[DATASET] Open file data/ShapeNet55-34/ShapeNet-55/test.txt
+[DATASET] 10518 instances were loaded
+[DATASET] 10518 instances were loaded
+[DATASET] 10518 instances were loaded
+[DATASET] 10518 instances were loaded
+Self attention:Self attention:  <class 'efficient_attention.former.AMLP'>
+<class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention:Self attention:  <class 'efficient_attention.former.AMLP'><class 'efficient_attention.former.AMLP'>
+
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention:Self attention:  <class 'efficient_attention.former.AMLP'><class 'efficient_attention.former.AMLP'>
+
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention:Self attention: Self attention:  <class 'efficient_attention.former.AMLP'><class 'efficient_attention.former.AMLP'><class 'efficient_attention.former.AMLP'>
+
+
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention: Cross attention:<class 'models.Transformer.CrossAttention'>
+ <class 'models.Transformer.CrossAttention'>
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Self attention:Self attention:  <class 'efficient_attention.former.AMLP'><class 'efficient_attention.former.AMLP'>
+
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention: Cross attention: <class 'models.Transformer.CrossAttention'>
+<class 'models.Transformer.CrossAttention'>
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Self attention: Self attention:<class 'efficient_attention.former.AMLP'> 
+<class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention:Cross attention:  <class 'models.Transformer.CrossAttention'><class 'models.Transformer.CrossAttention'>
+
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Self attention:Self attention:  <class 'efficient_attention.former.AMLP'>
+<class 'efficient_attention.former.AMLP'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention:Cross attention:  <class 'models.Transformer.CrossAttention'><class 'models.Transformer.CrossAttention'>
+
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Self attention:Self attention:  <class 'efficient_attention.former.AMLP'><class 'efficient_attention.former.AMLP'>
+
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention:Cross attention:  <class 'models.Transformer.CrossAttention'><class 'models.Transformer.CrossAttention'>
+
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Self attention:Self attention:  <class 'efficient_attention.former.AMLP'><class 'efficient_attention.former.AMLP'>
+
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention:Cross attention:  <class 'models.Transformer.CrossAttention'>
+<class 'models.Transformer.CrossAttention'>
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Self attention:Self attention:  <class 'efficient_attention.former.AMLP'><class 'efficient_attention.former.AMLP'>
+
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention:Cross attention:  <class 'models.Transformer.CrossAttention'><class 'models.Transformer.CrossAttention'>
+
+Cross attention: <class 'models.Transformer.CrossAttention'>
+Self attention: <class 'efficient_attention.former.AMLP'>
+Cross attention: <class 'models.Transformer.CrossAttention'>

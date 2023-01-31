@@ -91,6 +91,7 @@ class DGCNN_Grouper(nn.Module):
 
         # bs 3 N(128)   bs C(224)128 N(128)
         coor = x
+
         f = self.input_trans(x)
 
         f = self.get_graph_feature(coor, f, coor, f)
@@ -109,7 +110,7 @@ class DGCNN_Grouper(nn.Module):
         f = f.max(dim=-1, keepdim=False)[0]
 
         if self.group_points1 != self.group_points2:
-            coor_q, f_q = self.fps_downsample(coor, f, 1024)
+            coor_q, f_q = self.fps_downsample(coor, f, self.group_points2)
         else:
             coor_q, f_q = coor, f
         f = self.get_graph_feature(coor_q, f_q, coor, f)

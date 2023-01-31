@@ -7,7 +7,22 @@ from .dgcnn_group import DGCNN_Grouper
 from utils.logger import *
 import numpy as np
 from knn_cuda import KNN
-from efficient_attention import AMLP, ABC, AMLPSeq
+
+try:
+    from efficient_attention import AMLP, ABC, AMLPSeq
+    
+except:
+    pass
+
+from efficient_attention import Lara, S4D, CosformerAttention, LocalAttention, Performer
+from efficient_attention import NystromAttention, ProbSparse
+from efficient_attention import AttentionLS as LongShort
+
+try:
+    from efficient_attention import MemoryAttention
+except:
+    pass
+
 knn = KNN(k=8, transpose_mode=False)
 
 def get_knn_index(coor_q, coor_k=None):
@@ -168,7 +183,7 @@ class DecoderBlock(nn.Module):
     def forward(self, q, v, self_knn_index=None, cross_knn_index=None):
         # q = q + self.drop_path(self.self_attn(self.norm1(q)))
         norm_q = self.norm1(q)
-        if self.config.self_attn_name != 'mha':
+        if self.config.self_attn_name != 'mha' and self.config.self_attn_name != 'debug':
             q_1, _ = self.self_attn(norm_q.reshape(norm_q.shape[1], norm_q.shape[0], -1))
             q_1 = q_1.reshape(q_1.shape[1], q_1.shape[0], -1)
         else:
@@ -186,10 +201,13 @@ class DecoderBlock(nn.Module):
         norm_q = self.norm_q(q)
         norm_v = self.norm_v(v)
         if self.config.cross_attn_name != 'mha':
-            reshaped_norm_v = norm_v.reshape(norm_v.shape[1], norm_v.shape[0], -1)
-            q_2, _ = self.attn(norm_q.reshape(norm_q.shape[1], norm_q.shape[0], -1),
-                               reshaped_norm_v, reshaped_norm_v)
-            q_2 = q_2.reshape(q_2.shape[1], q_2.shape[0], -1)
+            if self.config.cross_attn_name == 'debug':
+                q_2 = norm_q 
+            else:
+                reshaped_norm_v = norm_v.reshape(norm_v.shape[1], norm_v.shape[0], -1)
+                q_2, _ = self.attn(norm_q.reshape(norm_q.shape[1], norm_q.shape[0], -1),
+                                reshaped_norm_v, reshaped_norm_v)
+                q_2 = q_2.reshape(q_2.shape[1], q_2.shape[0], -1)
         else:
             q_2 = self.attn(norm_q, norm_v, norm_v)
 
@@ -221,7 +239,7 @@ class DecoderBlock(nn.Module):
                 dropout = dropout,
                 embed_dim=embed_dim,
                 num_heads=num_heads,
-                ffn_dimension=config.self_ffn_dimension,
+                ffn_dimension=config.self_landmarks,
                 activation_fn=config.self_ffn_function
             )
         elif attn_name.lower() == 'abc':
@@ -230,6 +248,62 @@ class DecoderBlock(nn.Module):
                 embed_dim=embed_dim,
                 dropout=dropout,
                 num_landmarks=config.self_landmarks
+            )
+        elif attn_name == 'lara':
+            attn = Lara(
+                num_heads=num_heads,
+                embed_dim=embed_dim,
+                dropout=dropout,
+                num_landmarks=config.self_landmarks
+            )
+        
+        elif attn_name == 'nystrom':
+            attn = NystromAttention(
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                dropout=dropout,
+                num_landmarks=config.self_landmarks
+            )
+        elif attn_name == 'prob':
+            attn = ProbSparse(
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                dropout=dropout
+            )
+        elif attn_name == 'ls':
+            attn = LongShort(
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                dropout=dropout,
+                window_size=config.wsize,
+                num_landmarks=config.self_landmarks,
+            )
+        elif attn_name == 'local':
+            attn = LocalAttention(
+                num_heads=num_heads,
+                embed_dim=embed_dim,
+                dropout=dropout,
+                wsize=config.wsize
+            )
+        elif attn_name == 'cosformer':
+            attn = CosformerAttention(
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                dropout=dropout
+            )
+        elif attn_name == 'performer':
+            attn = Performer(
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                dropout=dropout,
+                approx_attn_dim=config.self_landmarks
+            )
+        elif attn_name == 's4d':
+            attn = S4D(
+                embed_dim=embed_dim,
+                d_state=config.self_landmarks,
+                num_heads=num_heads,
+                dropout=dropout
             )
         else:
             attn = Attention(
@@ -251,6 +325,7 @@ class DecoderBlock(nn.Module):
                    dropout=0.,
                    ):
         attn_name = config.cross_attn_name.lower()
+
         if attn_name == 'amlp':
             attn = AMLP(
                 bias=add_qkv_bias,
@@ -270,7 +345,17 @@ class DecoderBlock(nn.Module):
                 dropout=dropout,
                 ffn_dimension=config.cross_ffn_dimension,
                 activation_fn=config.cross_ffn_function,
-                conv_kernel_size=5
+                conv_kernel_size=config.conv_size if isinstance(config.conv_size, int) else eval(config.conv_size)
+            )
+        elif attn_name == 'mempool':
+            attn = MemoryAttention(
+                num_heads=num_heads,
+                embed_dim=embed_dim,
+                dropout=dropout,
+                pool_size=config.self_landmarks,
+                cross=True,
+                causal=False,
+                scale=True
             )
         elif attn_name == 'abc':
             attn = ABC(
@@ -278,6 +363,19 @@ class DecoderBlock(nn.Module):
                 embed_dim=embed_dim,
                 dropout=dropout,
                 num_landmarks=config.cross_landmarks
+            )
+        elif attn_name == 'cosformer':
+            attn = CosformerAttention(
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                dropout=dropout
+            )
+        elif attn_name == 'performer':
+            attn = Performer(
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                dropout=dropout,
+                approx_attn_dim=config.cross_landmarks
             )
         else:
             attn = CrossAttention(
@@ -316,10 +414,15 @@ class Block(nn.Module):
         # x = x + self.drop_path(self.attn(self.norm1(x)))
         norm_x = self.norm1(x)
         if self.config.self_attn_name != 'mha':
-            x_1, _ = self.attn(norm_x.reshape(norm_x.shape[1], norm_x.shape[0], -1))
-            x_1 = x_1.reshape(x_1.shape[1], x_1.shape[0], -1)
+            if self.config.self_attn_name == 'debug':
+                x_1 = norm_x
+            else:
+                x_1, _ = self.attn(norm_x.reshape(norm_x.shape[1], norm_x.shape[0], -1))
+                x_1 = x_1.reshape(x_1.shape[1], x_1.shape[0], -1)
         else:
             x_1 = self.attn(norm_x)
+        # x_1 = norm_x
+        # print(torch.equal(x_1, norm_x))
         # if isinstance(x_1, tuple):
         #     x_1 = x_1[0]
         if knn_index is not None:
@@ -347,8 +450,72 @@ class Block(nn.Module):
                 dropout = dropout,
                 embed_dim=embed_dim,
                 num_heads=num_heads,
-                ffn_dimension=config.self_ffn_dimension,
+                ffn_dimension=config.self_landmarks,
                 activation_fn=config.self_ffn_function
+            )
+        elif attn_name == 'debug':
+            attn = Attention(
+                dim=embed_dim,
+                num_heads=num_heads,
+                qkv_bias=add_qkv_bias,
+                qk_scale=None,
+                attn_drop=attn_dropout,
+                proj_drop=dropout
+            )
+        elif attn_name == 'lara':
+            attn = Lara(
+                num_heads=num_heads,
+                embed_dim=embed_dim,
+                dropout=dropout,
+                num_landmarks=config.self_landmarks
+            )
+        elif attn_name == 'nystrom':
+            attn = NystromAttention(
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                dropout=dropout,
+                num_landmarks=config.self_landmarks
+            )
+        elif attn_name == 'prob':
+            attn = ProbSparse(
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                dropout=dropout
+            )
+        elif attn_name == 'local':
+            attn = LocalAttention(
+                num_heads=num_heads,
+                embed_dim=embed_dim,
+                dropout=dropout,
+                wsize=config.wsize
+            )
+        elif attn_name == 'cosformer':
+            attn = CosformerAttention(
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                dropout=dropout
+            )
+        elif attn_name == 'ls':
+            attn = LongShort(
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                dropout=dropout,
+                window_size=config.wsize,
+                num_landmarks=config.self_landmarks,
+            )
+        elif attn_name == 'performer':
+            attn = Performer(
+                embed_dim=embed_dim,
+                num_heads=num_heads,
+                dropout=dropout,
+                approx_attn_dim=config.self_landmarks
+            )
+        elif attn_name == 's4d':
+            attn = S4D(
+                embed_dim=embed_dim,
+                d_state=config.self_landmarks,
+                num_heads=num_heads,
+                dropout=dropout
             )
         elif attn_name == 'abc':
             attn = ABC(
@@ -366,7 +533,7 @@ class Block(nn.Module):
                 attn_drop=attn_dropout,
                 proj_drop=dropout
             )
-        print("Self attention:", attn.__class__)
+        print("Self attention:", attn.__class__ if attn is not None else None)
         return attn
 
 

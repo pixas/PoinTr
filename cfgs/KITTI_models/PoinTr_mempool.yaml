@@ -29,7 +29,9 @@ dataset : {
             others: {subset: 'test'}}}
 
 model : {
-  NAME: PoinTr, num_pred: 14336, num_query: 1024, knn_layer: 1, trans_dim: 384, group_points1: 512, group_points2: 128}
+  NAME: PoinTr, num_pred: 14336, num_query: 3584, knn_layer: 1, trans_dim: 384, self_attn_name: 'softmax', self_ffn_dimension: 64, self_ffn_function: 'softmax',
+  cross_attn_name: 'mempool', cross_ffn_dimension: 64, cross_ffn_function: 'softmax',
+  group_points1: 1536, group_points2: 1536}
 total_bs : 64
 step_per_update : 1
 max_epoch : 600

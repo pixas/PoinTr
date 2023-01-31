@@ -9,7 +9,7 @@ from utils.logger import *
 from utils.AverageMeter import AverageMeter
 from utils.metrics import Metrics
 from extensions.chamfer_dist import ChamferDistanceL1, ChamferDistanceL2
-
+from petrel_client.client import Client
 def run_net(args, config, train_writer=None, val_writer=None):
     logger = get_logger(args.log_name)
     # build dataset
@@ -153,7 +153,7 @@ def run_net(args, config, train_writer=None, val_writer=None):
                 best_metrics = metrics
                 builder.save_checkpoint(base_model, optimizer, epoch, metrics, best_metrics, 'ckpt-best', args, logger = logger)
         builder.save_checkpoint(base_model, optimizer, epoch, metrics, best_metrics, 'ckpt-last', args, logger = logger)      
-        if (config.max_epoch - epoch) < 10:
+        if (config.max_epoch - epoch) < 50:
             builder.save_checkpoint(base_model, optimizer, epoch, metrics, best_metrics, f'ckpt-epoch-{epoch:03d}', args, logger = logger)     
     train_writer.close()
     val_writer.close()
@@ -301,8 +301,11 @@ def test_net(args, config):
     ChamferDisL1 = ChamferDistanceL1()
     ChamferDisL2 = ChamferDistanceL2()
 
+    begin = time.time()
     test(base_model, test_dataloader, ChamferDisL1, ChamferDisL2, args, config, logger=logger)
-
+    end = time.time()
+    print_log("Inference costs {} seconds".format(end - begin), logger=logger)
+    
 def test(base_model, test_dataloader, ChamferDisL1, ChamferDisL2, args, config, logger = None):
 
     base_model.eval()  # set model to eval mode
@@ -373,8 +376,9 @@ def test(base_model, test_dataloader, ChamferDisL1, ChamferDisL2, args, config, 
                 ret = base_model(partial)
                 dense_points = ret[1]
                 target_path = os.path.join(args.experiment_path, 'vis_result')
-                if not os.path.exists(target_path):
-                    os.mkdir(target_path)
+                client = Client("~/petreloss.conf")
+                # if not client.contains(target_path):
+                #     os.mkdir(target_path)
                 misc.visualize_KITTI(
                     os.path.join(target_path, f'{model_id}_{idx:03d}'),
                     [partial[0].cpu(), dense_points[0].cpu()]

@@ -80,6 +80,8 @@ class CephManager:
         self._client.put(dst_path, object)
         return dst_path
 
+client = CephManager()
+
 class IO:
     @classmethod
     def get(cls, file_path):
@@ -99,7 +101,12 @@ class IO:
     # References: https://github.com/numpy/numpy/blob/master/numpy/lib/format.py
     @classmethod
     def _read_npy(cls, file_path):
-        return np.load(file_path)
+        
+        if file_path.startswith("s3://"):
+            with io.BytesIO(client.get(file_path)) as f:
+                return np.load(f)
+        else:
+            return np.load(file_path)
        
     # References: https://github.com/dimatura/pypcd/blob/master/pypcd/pypcd.py#L275
     # Support PCD files without compression ONLY!

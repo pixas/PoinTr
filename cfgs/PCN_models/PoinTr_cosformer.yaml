@@ -1,9 +1,10 @@
 optimizer : {
   type: AdamW,
   kwargs: {
-  lr : 0.0001, 
+  lr : 0.0005, 
   weight_decay : 0.0005
 }}
+
 scheduler: {
   type: LambdaLR,
   kwargs: {
@@ -11,6 +12,7 @@ scheduler: {
   lr_decay: 0.9,
   lowest_decay: 0.02  # min lr = lowest_decay * lr
 }}
+
 bnmscheduler: {
   type: Lambda,
   kwargs: {
@@ -19,19 +21,20 @@ bnmscheduler: {
   bn_momentum: 0.9,
   lowest_decay: 0.01
 }}
-
 dataset : {
-  train : { _base_: cfgs/dataset_configs/PCNCars.yaml, 
+  train : { _base_: cfgs/dataset_configs/PCN.yaml, 
             others: {subset: 'train'}},
-  val : { _base_: cfgs/dataset_configs/PCNCars.yaml, 
+  val : { _base_: cfgs/dataset_configs/PCN.yaml, 
             others: {subset: 'test'}},
-  test : { _base_: cfgs/dataset_configs/KITTI.yaml, 
+  test : { _base_: cfgs/dataset_configs/PCN.yaml, 
             others: {subset: 'test'}}}
 
 model : {
-  NAME: PoinTr, num_pred: 14336, num_query: 1024, knn_layer: 1, trans_dim: 384, group_points1: 512, group_points2: 128}
-total_bs : 64
+  NAME: PoinTr, num_pred: 14336, num_query: 3584, knn_layer: 1, trans_dim: 384, self_attn_name: 'mha', self_landmarks: 64,
+  cross_attn_name: 'cosformer', cross_landmarks: 64,
+  group_points1: 1536, group_points2: 1536, wsize: 15}
+total_bs : 48 
 step_per_update : 1
-max_epoch : 600
+max_epoch : 300
 
 consider_metric: CDL1

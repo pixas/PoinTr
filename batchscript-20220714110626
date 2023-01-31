@@ -1,0 +1,30 @@
+#!/bin/bash
+#SBATCH --partition CM2M
+#SBATCH --nodes 1
+#SBATCH --gres gpu:4
+#SBATCH --quotatype auto
+#SBATCH -o phoenix-slurm-%j.out
+# args: -p
+# args: CM2M
+# args: -N1
+# args: --gres=gpu:4
+# args: --quotatype=auto
+# args: bash
+# args: ./scripts/dist_train.sh
+# args: 4
+# args: 19889
+# args: --config
+# args: ./cfgs/ShapeNet55_models/PoinTr_amlp.yaml
+# args: --save_dir
+# args: s3://NLP/jsy/checkpoints/pointr_experiments
+# args: --exp_name
+# args: amlp_in1536_out3072
+# args: --resume
+argv=()
+while read -r line; do
+    if [[ $line == "# args: "* ]]; then
+        argv[${#argv[*]}]="${line:8}"
+    fi
+done < $0
+
+srun "${argv[@]}"

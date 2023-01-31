@@ -1,0 +1,12 @@
+srun: job 4104539 queued and waiting for resources
+srun: job 4104539 has been allocated resources
+srun: Job 4104539 scheduled successfully!
+Current QUOTA_TYPE is [reserved], which means the job has occupied quota in RESERVED_TOTAL under your partition.
+Current PHX_PRIORITY is normal
+
++ NGPUS=4
++ PORT=15558
++ PY_ARGS='--config ./cfgs/PCN_models/PoinTr.yaml --exp_name vanilla_in1536_out3584 --save_dir s3://NLP/jsy/checkpoints/pointr_experiments'
++ python -m torch.distributed.launch --master_port=15558 --nproc_per_node=4 main.py --launcher pytorch --sync_bn --config ./cfgs/PCN_models/PoinTr.yaml --exp_name vanilla_in1536_out3584 --save_dir s3://NLP/jsy/checkpoints/pointr_experiments
+/mnt/cache/share/spring/conda_envs/miniconda3/bin/python: Error while finding module specification for 'torch.distributed.launch' (ModuleNotFoundError: No module named 'torch')
+srun: error: SH-IDC1-10-140-0-173: task 0: Exited with exit code 1

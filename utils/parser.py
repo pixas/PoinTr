@@ -149,13 +149,21 @@ def get_args():
     return args
 
 def create_experiment_dir(args):
-    client = CephManager()
-    if not client.exists(args.experiment_path):
+    
+    if ":" in args.experiment_path:
+        client = CephManager()
+        if not client.exists(args.experiment_path):
 
-        print('Create experiment path successfully at %s' % args.experiment_path)
-    mapping_path = {'s3://NLP/jsy': "/mnt/lustre/jiangshuyang"}
-    tfboard_path = str.replace(args.tfboard_path, 's3://NLP/jsy', mapping_path['s3://NLP/jsy'])
-    if not os.path.exists(tfboard_path):
-        os.makedirs(tfboard_path)
-        print('Create TFBoard path successfully at %s' % tfboard_path)
-
+            print('Create experiment path successfully at %s' % args.experiment_path)
+        mapping_path = {'s3://NLP/jsy': "/mnt/lustre/jiangshuyang"}
+        tfboard_path = str.replace(args.tfboard_path, 's3://NLP/jsy', mapping_path['s3://NLP/jsy'])
+        if not os.path.exists(tfboard_path):
+            os.makedirs(tfboard_path)
+            print('Create TFBoard path successfully at %s' % tfboard_path)
+    else:
+        if not os.path.exists(args.experiment_path):
+            print('Create experiment path successfully at %s' % args.experiment_path)
+        
+        if not os.path.exists(args.tfboard_path):
+            os.makedirs(args.tfboard_path)
+            print('Create TFBoard path successfully at %s' % args.tfboard_path)

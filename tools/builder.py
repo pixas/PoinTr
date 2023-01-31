@@ -136,19 +136,26 @@ def build_opti_sche(base_model, config):
 def resume_model(base_model, args, logger = None):
     ceph_reader_writer = CephManager()
     ckpt_path = os.path.join(args.experiment_path, 'ckpt-last.pth')
-    if not os.path.exists(ckpt_path):
-        print_log(f'[RESUME INFO] no checkpoint file from path {ckpt_path}...', logger = logger)
-        return 0, 0
+    if ":" in args.experiment_path:
+        if not ceph_reader_writer.exists(ckpt_path):
+            print_log(f'[RESUME INFO] no checkpoint file from path {ckpt_path}...', logger = logger)
+            return 0, 0
+    else:
+        if not os.path.exists(ckpt_path):
+            print_log(f'[RESUME INFO] no checkpoint file from path {ckpt_path}...', logger = logger)
+            return 0, 0
     print_log(f'[RESUME INFO] Loading model weights from {ckpt_path}...', logger = logger )
 
     # load state dict
     map_location = {'cuda:%d' % 0: 'cuda:%d' % args.local_rank}
-    state_dict = ceph_reader_writer.load_model(ckpt_path, map_location=map_location)
-    # state_dict = torch.load(ckpt_path, map_location=map_location)
+    if ":" in ckpt_path:
+        state_dict = ceph_reader_writer.load_model(ckpt_path, map_location=map_location)
+    else:
+        state_dict = torch.load(ckpt_path, map_location=map_location)
     # parameter resume of base model
     # if args.local_rank == 0:
     base_ckpt = {k.replace("module.", ""): v for k, v in state_dict['base_model'].items()}
-    base_model.load_state_dict(base_ckpt)
+    base_model.load_state_dict(base_ckpt, strict=False)
 
     # parameter
     start_epoch = state_dict['epoch'] + 1
@@ -163,13 +170,21 @@ def resume_model(base_model, args, logger = None):
 def resume_optimizer(optimizer, args, logger = None):
     ceph_reader_writer = CephManager()
     ckpt_path = os.path.join(args.experiment_path, 'ckpt-last.pth')
-    if not os.path.exists(ckpt_path):
-        print_log(f'[RESUME INFO] no checkpoint file from path {ckpt_path}...', logger = logger)
-        return 0, 0, 0
+    if ":" in ckpt_path:
+        if not ceph_reader_writer.exists(ckpt_path):
+            print_log(f'[RESUME INFO] no checkpoint file from path {ckpt_path}...', logger = logger)
+            return 0, 0, 0
+    else:
+        if not os.path.exists(ckpt_path):
+            print_log(f'[RESUME INFO] no checkpoint file from path {ckpt_path}...', logger = logger)
+            return 0, 0, 0
+        
     print_log(f'[RESUME INFO] Loading optimizer from {ckpt_path}...', logger = logger )
     # load state dict
-    state_dict = ceph_reader_writer.load_model(ckpt_path, map_location='cpu')
-    # state_dict = torch.load(ckpt_path, map_location='cpu')
+    if ":" in ckpt_path:
+        state_dict = ceph_reader_writer.load_model(ckpt_path, map_location='cpu')
+    else:
+        state_dict = torch.load(ckpt_path, map_location='cpu')
     # optimizer
     optimizer.load_state_dict(state_dict['optimizer'])
 
@@ -177,34 +192,41 @@ def save_checkpoint(base_model, optimizer, epoch, metrics, best_metrics, prefix,
     ceph_reader_writer = CephManager()
     if args.local_rank == 0:
         ckpt_dir = os.path.join(args.experiment_path, prefix + '.pth')
-        with io.BytesIO() as f:
+        if ":" in ckpt_dir:
+            with io.BytesIO() as f:
+                torch.save({
+                        'base_model' : base_model.module.state_dict() if args.distributed else base_model.state_dict(),
+                        'optimizer' : optimizer.state_dict(),
+                        'epoch' : epoch,
+                        'metrics' : metrics.state_dict() if metrics is not None else dict(),
+                        'best_metrics' : best_metrics.state_dict() if best_metrics is not None else dict(),
+                        }, f)
+                ceph_reader_writer.write(ckpt_dir, f.getvalue())
+        else:
             torch.save({
-                    'base_model' : base_model.module.state_dict() if args.distributed else base_model.state_dict(),
-                    'optimizer' : optimizer.state_dict(),
-                    'epoch' : epoch,
-                    'metrics' : metrics.state_dict() if metrics is not None else dict(),
-                    'best_metrics' : best_metrics.state_dict() if best_metrics is not None else dict(),
-                    }, f)
-            ceph_reader_writer.write(ckpt_dir, f.getvalue())
-        # ceph_reader_writer.write(ckpt_dir, )
-        # torch.save({
-        #             'base_model' : base_model.module.state_dict() if args.distributed else base_model.state_dict(),
-        #             'optimizer' : optimizer.state_dict(),
-        #             'epoch' : epoch,
-        #             'metrics' : metrics.state_dict() if metrics is not None else dict(),
-        #             'best_metrics' : best_metrics.state_dict() if best_metrics is not None else dict(),
-        #             }, ckpt_dir)
+                        'base_model' : base_model.module.state_dict() if args.distributed else base_model.state_dict(),
+                        'optimizer' : optimizer.state_dict(),
+                        'epoch' : epoch,
+                        'metrics' : metrics.state_dict() if metrics is not None else dict(),
+                        'best_metrics' : best_metrics.state_dict() if best_metrics is not None else dict(),
+                        }, ckpt_dir)
         print_log(f"Save checkpoint at {os.path.join(args.experiment_path, prefix + '.pth')}", logger = logger)
 
 def load_model(base_model, ckpt_path, logger = None):
     ceph_reader_writer = CephManager()
-    if not os.path.exists(ckpt_path):
-        raise NotImplementedError('no checkpoint file from path %s...' % ckpt_path)
+    if ":" in ckpt_path:
+        if not ceph_reader_writer.exists(ckpt_path):
+            raise NotImplementedError('no checkpoint file from path %s...' % ckpt_path)
+    else:
+        if not os.path.exists(ckpt_path):
+            raise NotImplementedError('no checkpoint file from path %s...' % ckpt_path)
     print_log(f'Loading weights from {ckpt_path}...', logger = logger )
 
     # load state dict
-    state_dict = ceph_reader_writer.load_model(ckpt_path, map_location='cpu')
-    # state_dict = torch.load(ckpt_path, map_location='cpu')
+    if ":" in ckpt_path:
+        state_dict = ceph_reader_writer.load_model(ckpt_path, map_location='cpu')
+    else:
+        state_dict = torch.load(ckpt_path, map_location='cpu')
     # parameter resume of base model
     if state_dict.get('model') is not None:
         base_ckpt = {k.replace("module.", ""): v for k, v in state_dict['model'].items()}
@@ -212,7 +234,7 @@ def load_model(base_model, ckpt_path, logger = None):
         base_ckpt = {k.replace("module.", ""): v for k, v in state_dict['base_model'].items()}
     else:
         raise RuntimeError('mismatch of ckpt weight')
-    base_model.load_state_dict(base_ckpt)
+    base_model.load_state_dict(base_ckpt, strict=False)
 
     epoch = -1
     if state_dict.get('epoch') is not None:

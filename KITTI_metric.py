@@ -1,3 +1,4 @@
+import io
 import os
 import yaml
 from datasets import build_dataset_from_cfg
@@ -9,6 +10,8 @@ import torch
 import numpy as np
 
 from tqdm import tqdm
+from petrel_client.client import Client
+client = Client("~/petreloss.conf")
 
 def build_ShapeNetCars():
     ShapeNetCars_config = val = yaml.load(open('cfgs/dataset_configs/PCNCars.yaml', 'r'), Loader=yaml.FullLoader)
@@ -32,8 +35,14 @@ def get_Fidelity():
 
     metric = []
     for sample in Samples:
-        input_data = torch.from_numpy(np.load(os.path.join(Data_path, sample, 'input.npy'))).unsqueeze(0).cuda()
-        pred_data = torch.from_numpy(np.load(os.path.join(Data_path, sample, 'pred.npy'))).unsqueeze(0).cuda()
+        input_data_path = os.path.join(Data_path, sample, 'input.npy')
+        pred_data_path = os.path.join(Data_path, sample, 'pred.npy')
+        with io.BytesIO(client.get(input_data_path)) as f:
+            input_data = torch.from_numpy(np.load(f)).unsqueeze(0).cuda()
+        with io.BytesIO(client.get(pred_data_path)) as f:
+            pred_data = torch.from_numpy(np.load(f)).unsqueeze(0).cuda()
+        # input_data = torch.from_numpy(np.load(os.path.join(Data_path, sample, 'input.npy'))).unsqueeze(0).cuda()
+        # pred_data = torch.from_numpy(np.load(os.path.join(Data_path, sample, 'pred.npy'))).unsqueeze(0).cuda()
         metric.append(criterion(input_data, pred_data)[0])
     print('Fidelity is %f' % (sum(metric)/len(metric)))
 
@@ -68,9 +77,13 @@ def get_Consistency():
             
             if next_frame - 1 != this_frame:
                 continue
+            this_car_path = os.path.join(Data_path, f'frame_{this_frame}_car_{int(this_elements[3])}_{int(this_elements[4]):03d}', 'pred.npy')
+            next_car_path = os.path.join(Data_path, f'frame_{next_frame}_car_{int(next_elements[3])}_{int(next_elements[4]):03d}', 'pred.npy')
+            with io.BytesIO(client.get(this_car_path)) as f:
+                this_car = torch.from_numpy(np.load(f)).unsqueeze(0).cuda()
+            with io.BytesIO(client.get(next_car_path)) as f:
+                next_car = torch.from_numpy(np.load(f)).unsqueeze(0).cuda()
             
-            this_car = torch.from_numpy(np.load(os.path.join(Data_path, f'frame_{this_frame}_car_{int(this_elements[3])}_{int(this_elements[4]):03d}', 'pred.npy'))).unsqueeze(0).cuda()
-            next_car = torch.from_numpy(np.load(os.path.join(Data_path, f'frame_{next_frame}_car_{int(next_elements[3])}_{int(next_elements[4]):03d}', 'pred.npy'))).unsqueeze(0).cuda()
             cd = criterion(this_car, next_car)
             Each_Car_Consistency.append(cd)
         
@@ -84,7 +97,11 @@ def get_MMD():
     #MMD
     metric = []
     for item in tqdm(sorted(Samples)):
-        pred_data = torch.from_numpy(np.load(os.path.join(Data_path, item, 'pred.npy'))).unsqueeze(0).cuda()
+        item_path = os.path.join(Data_path, item, "pred.npy")
+        with io.BytesIO(client.get(item_path)) as f:
+            data = np.load(f)
+            pred_data = torch.from_numpy(data).unsqueeze(0).cuda()
+        # pred_data = torch.from_numpy(np.load(os.path.join(Data_path, item, 'pred.npy'))).unsqueeze(0).cuda()
         batch_cd = []
         for index in range(len(ShapeNetCars_dataset)):
             gt = ShapeNetCars_dataset[index][-1][1].cuda().unsqueeze(0)
@@ -105,7 +122,7 @@ if __name__ == '__main__':
 
     # Your data
     Data_path = args.vis_path
-    Samples = [item for item in os.listdir(Data_path) if os.path.isdir(Data_path + '/' + item)]
+    Samples = [item for item in client.list(Data_path) if client.isdir(os.path.join(Data_path, item))]
     criterion = ChamferDistanceL2_split(ignore_zeros=True)
 
     get_Fidelity()

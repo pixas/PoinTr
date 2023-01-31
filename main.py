@@ -38,10 +38,14 @@ def main():
     # define the tensorboard writer
     if not args.test:
         if args.local_rank == 0:
-            mapping_path = {'s3://NLP/jsy': "/mnt/lustre/jiangshuyang"}
-            tfboard_path = str.replace(args.tfboard_path, 's3://NLP/jsy', mapping_path['s3://NLP/jsy'])
-            train_writer = SummaryWriter(os.path.join(tfboard_path, 'train'))
-            val_writer = SummaryWriter(os.path.join(tfboard_path, 'test'))
+            if args.tfboard_path.startswith("s3://"):
+                mapping_path = {'s3://syjiang_bucket': "/mnt/petrelfs/jiangshuyang"}
+                tfboard_path = str.replace(args.tfboard_path, 's3://syjiang_bucket', mapping_path['s3://syjiang_bucket'])
+                train_writer = SummaryWriter(os.path.join(tfboard_path, 'train'))
+                val_writer = SummaryWriter(os.path.join(tfboard_path, 'test'))
+            else:
+                train_writer = SummaryWriter(os.path.join(args.tfboard_path, 'train'))
+                val_writer = SummaryWriter(os.path.join(args.tfboard_path, 'test'))
         else:
             train_writer = None
             val_writer = None
@@ -71,14 +75,13 @@ def main():
         test_net(args, config)
     else:
         run_net(args, config, train_writer, val_writer)
-    mapping_path = {'s3://NLP/jsy': "/mnt/lustre/jiangshuyang"}
-    client = Client("~/petreloss.conf")
-    log_data = log_file.replace('s3://NLP/jsy', mapping_path['s3://NLP/jsy'])
-    with open(log_data) as f:
-        
-        client.put(log_file, bytes(f.read(), encoding='utf-8'))
-    os.system("rm {}".format(log_data))
-    # os.system("aws --no-sign-request s3 cp {}/ {}/".format(log_data, log_file))
+    if log_file.startswith("s3://"):
+        mapping_path = {'s3://syjiang_bucket': "/mnt/petrelfs/jiangshuyang"}
+
+        log_data = log_file.replace('s3://syjiang_bucket', mapping_path['s3://syjiang_bucket'])
+        os.system("aws s3 cp {}/ {}/".format(log_data, log_file))
+        os.system("aws s3 cp --recursive {}/ {}/".format(tfboard_path, args.tfboard_path))
+        os.system("rm -rf {}".format(tfboard_path))
 
 
 if __name__ == '__main__':
